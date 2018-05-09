@@ -112,3 +112,75 @@ fastFib n = fst (fibPair n)
 
 fibs :: (Enum a, Eq a, Num a) => a -> [a]
 fibs n = map fastFib [1..n]
+
+golden :: Fractional a => Int -> [a]
+golden n = take n (map (\(x, y) -> x/y) (iterate fibStep (0, 1)))
+-- > golden 7
+-- [0.0,1.0,0.5,0.6666666666666666,0.6,0.625,0.6153846153846154]
+
+combine :: [(a, a)] -> [(a, a, a)]
+combine ((f1, f2):(f3, f4):fs) = (f1, f2, f4) : combine ((f3, f4):fs)
+combine _ = []
+-- combine $ fibPairs 7
+-- [(1,1,2),(1,2,3),(2,3,5),(3,5,8),(5,8,13),(8,13,21)]
+
+fibPairs :: Int -> [(Int, Int)]
+fibPairs n = map fibPair [1..n]
+
+difference :: Int -> [Int]
+difference n = map (\(f1, f2, f3) -> f1 * f3 - f2 * f2) (combine $ fibPairs n)
+-- > difference 10
+-- [1,-1,1,-1,1,-1,1,-1,1]
+
+
+romeNotation :: [String]
+romeNotation = ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"]
+
+romeAmount :: [Int]
+romeAmount = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+
+romePair :: [(Int, String)]
+romePair = zip romeAmount romeNotation
+
+-- 给定一个十制数，只需要找到第一个不大于它的罗马数字，然后从十进制数字中减去，再将剩下的十进制数递归地转换成罗马数字即可。
+subtrahend :: Int -> (Int, String)
+subtrahend n = head (dropWhile (\(a, _) -> a > n) romePair)
+-- > subtrahend 5
+-- (5,"V")
+-- > subtrahend 86
+-- (50,"L")
+
+convert :: Int -> String
+convert 0 = ""
+convert n = let (rome, m) = subtrahend n
+            in m ++ convert(n - rome)
+-- > convert 12
+-- (0,"XII")
+-- > convert 109
+-- (0,"CIX")
+-- > convert 1925
+-- (0,"MCMXXV")
+
+
+binSearch :: (Ord a) => a -> [a] -> Bool
+binSearch a [] = False
+binSearch a xs  | m < a = binSearch a behind
+                | m > a = binSearch a front
+                | otherwise = True
+                where (front, m:behind) = splitAt (length xs `div` 2) xs
+
+-- 5.8.1
+binSearch2 :: (Ord a) => a -> [a] -> [a]
+binSearch2 a [] = []
+binSearch2 a xs | m < a = binSearch2 a behind
+                | m > a = binSearch2 a front
+                | otherwise = checkNeibor m (reverse front) ++ [m] ++ checkNeibor m behind
+                where (front, m:behind) = splitAt (length xs `div` 2) xs
+
+checkNeibor :: (Ord a) => a -> [a] -> [a]
+checkNeibor n [] = []
+-- checkNeibor n (x:xs) = if n == x then x : checkNeibor n xs else []
+checkNeibor n xs = takeWhile (\x -> x == n) xs
+
+-- > binSearch2 4 [1,2,2,3,4,4,4,5,6,7,8]
+-- [4,4,4]
