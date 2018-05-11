@@ -184,3 +184,58 @@ checkNeibor n xs = takeWhile (\x -> x == n) xs
 
 -- > binSearch2 4 [1,2,2,3,4,4,4,5,6,7,8]
 -- [4,4,4]
+
+
+-- insertion sort
+insert :: Ord a => a -> [a] -> [a]
+insert x [] = [x]
+insert x (y:ys) | x < y = x:y:ys
+                | otherwise = y: insert x ys
+
+insertionSort :: Ord a => [a] -> [a] -> [a]
+insertionSort xs [] = xs
+insertionSort xs (y:ys) = insertionSort (insert y xs) ys
+
+insertionSort' :: Ord a => [a] -> [a]
+insertionSort' [] = []
+insertionSort' (x:xs) = insert x (insertionSort' xs)
+
+-- bubble sort
+swaps :: Ord a => [a] -> [a]
+swaps [] = []
+swaps [x] = [x]
+swaps (x1:x2:xs)
+    | x1 > x2 = x2 : swaps (x1:xs)
+    | otherwise = x1 : swaps (x2:xs)
+
+-- 来定义一个不动点函数。这个函数可以一直调用swaps，一直到列表不再发生变化为止
+fix :: Eq a => (a -> a) -> a -> a
+fix f x = if x == x' then x else fix f x'
+    where x' = f x
+
+bubbleSort :: Ord a => [a] -> [a]
+bubbleSort xs = fix swaps xs
+
+bubbleSort' :: Ord a => [a] -> [a]
+bubbleSort' xs  | swaps xs == xs = xs
+                | otherwise = bubbleSort' $ swaps xs
+
+bubbleSort'' :: Ord a => [a] -> [a]
+bubbleSort'' [] = []
+bubbleSort'' xs = bubbleSort'' initialElements ++ [lastElement]
+    where   swappedxs       =  swaps xs
+            initialElements = init swappedxs
+            lastElement     = last swappedxs
+
+delete :: Eq a => a -> [a] -> [a]
+delete _ [] = []
+delete x (y:ys) | x == y = ys
+                | otherwise = y : delete x ys
+
+selectionSort :: Ord a => [a] -> [a]
+selectionSort [] = []
+selectionSort xs = mini : selectionSort xs'
+    -- twice lookup
+    where   mini = minimum xs
+            xs' = delete mini xs
+    
