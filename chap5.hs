@@ -209,12 +209,12 @@ swaps (x1:x2:xs)
     | otherwise = x1 : swaps (x2:xs)
 
 -- 来定义一个不动点函数。这个函数可以一直调用swaps，一直到列表不再发生变化为止
-fix :: Eq a => (a -> a) -> a -> a
-fix f x = if x == x' then x else fix f x'
+fix' :: Eq a => (a -> a) -> a -> a
+fix' f x = if x == x' then x else fix' f x'
     where x' = f x
 
 bubbleSort :: Ord a => [a] -> [a]
-bubbleSort xs = fix swaps xs
+bubbleSort xs = fix' swaps xs
 
 bubbleSort' :: Ord a => [a] -> [a]
 bubbleSort' xs  | swaps xs == xs = xs
@@ -273,3 +273,108 @@ mergeSort xs = merge (mergeSort x1) (mergeSort x2)
         halve xs = (take l xs, drop l xs)
         l = (length xs) `div` 2 
 
+
+-- 递归基本条件与程序终⽌
+
+-- 有这样一类递归函数，无法确定递归基本条件一定可到达。
+-- 比如：对于任意大于等于 1的整数 n，当 n = 1 时返回 1，结束程序，若 n 为偶数，则 n = n/2，否则 n = 3n + 1。
+halt :: Integral a => a -> [a]
+halt 1 = [1]
+halt n  | even n = let n' = div n 2 in n' : halt n'
+        | otherwise = let n' = 3 * n + 1 in n' : halt n'
+
+-- 虽然不能很容易地直接看出或者证明它会停下来，但是它
+-- 们总被认为是会停下来的，可惜很难给出证明，这就是著名的考拉兹猜想（Collatz conjecture，
+-- 也有译作奇偶归一猜想），生成的这个序列称为考拉兹序列（Collatz sequence）。
+-- 另外，还有一些函数是没有停止条件的，它们会永远运算下去。
+
+-- 之前在冒泡排序中提到了 fix 函数，它就是不动点函数（fixed point function）。不动点
+-- 理论由荷兰数学家 Brouwer 引入。函数的不动点意为当参数应用到这个函数时，结果是这个
+-- 参数本身。
+
+-- 虽然函数式编程基于 λ 演算，但 λ 演算中所定义的函数不能像 Haskell 那样简单地通过
+-- 调用自身来定义递归函数。为了在 λ 演算中定义递归函数，就有人引入了不动点这一概念。
+-- 函数式编程是以 λ 演算为理论基础的，而 λ 演算又使用了不动点组合子来表达递归，所以
+-- 说语义上 Haskell 中的递归是通过不动点函数来实现的。虽然在使用与定义递归函数时，我
+-- 们并不使用不动点函数，但是 λ 演算的不动点函数承载了所有 Haskell 中定义的递归函数，
+-- 包括我们在 Haskell 中定义的不动点函数 fix 本身。
+
+-- 看一下计算不动点的函数fix 是如何定义的：
+fix :: (a -> a) -> a
+fix f = f (fix f)
+
+-- 感谢惰性求值，使用 take 10 (fix (1:)) 可以得到该列表的前 10 项。
+-- > take 10 (fix (1:))
+-- [1,1,1,1,1,1,1,1,1,1]
+
+factorial' :: Int -> Int
+factorial' = fix (\f n -> if (n == 0) then 1 else n * f (n-1))
+
+-- 从函数应用的顺序读者也能看得出来，我们不会一直应用 fix 函数，而是在需要的时候再应用。有
+-- 些情况下我们不希望 fix 函数一直调用下去。比如，我们只需要调用函数 f，直到所得的结
+-- 果不再发生变化就可以停止了，即 f(x)=x，这里，x 为 f(x) 的不动点。
+-- 有时，也可设定停止的条件为相邻两次结果之间的差值小于某个精度。
+
+-- ⽜顿法开⽅
+squareroot :: Int -> Double -> Double
+squareroot 0 x = x
+squareroot n x = (t + x / t) / 2
+        where t = squareroot (n-1) x
+    
+-- 如果使用 fix 函数，就需要一个需要函数来判定何时停止，
+-- 因为不需要函数永远计算下去，只是需要达到一定的精度即可。
+fix2 :: (t -> t -> Bool) -> (t -> t) -> t -> t
+fix2 c f x  | c x (f x) = x
+            | otherwise = fix2 c f (f x)
+
+newton :: Fractional a => a -> a -> a
+newton c t = (c/t + t) / 2.0
+
+mysqrt :: Double -> Double
+mysqrt c = fix2 (\a b -> a - b < 0.000001) (newton c) c
+
+-- 这里，可以看到不动点函数其实是对递归的一种更为高等的抽象。mysqrt 函数会把
+-- newton 函数作为输入然后不停地迭代，所以它是一个高阶函数。
+
+-- ⽆基本条件递归和惰性求值
+
+-- 在 Haskell 中有着这样一类的递归：它们并没有递归的基本条件，而仅仅有一个递归步，
+-- 比如上节中的不动点函数。这些函数在不断的调用自身，但却没有停止条件。
+-- 另外，还有[1,1..] 这个列表可以用下面的这种递归方法来定义：
+ones' = 1:ones'
+
+-- 定义这种函数时，并没有将参数向某个数据结构的某种形式靠拢，而是用这个函数计算本身
+-- 去填充一个数据结构的构造器参数。
+nature' = 0 : map (+1) nature'
+fibs' = (0:1:zipWith (+) fibs' (tail fibs'))
+
+-- nature = 0 : map (+1) nature
+-- = 0 : map (+1) (0 : map (+1) nature)
+-- = 0 : 1 : map (+1) (map (+1) nature)
+-- = 0 : 1 : map (+1) (map (+1) (0: map (+1) nature))
+-- = 0 : 1 : map (+1) (1 : map (+1) (map (+1) nature)))
+-- = 0 : 1 : 2 : map (+1) (map (+1) (map (+1) (map (+1) nature)))
+-- = ...
+
+-- 这也就说明了 Haskell 在计算时并没有完全计算整个列表而是仅仅计算它所需要的部分。能
+-- 以这种方法生成列表是 Haskell 重要的特性之一。
+
+-- 变得懒惰常常需要考虑无限的情形或者忽略那些用不到的参数。
+shorter :: [a] -> [a] -> [a]
+shorter xs ys   | x < y = xs  
+                | otherwise = ys
+    where
+        x = length xs
+        y = length ys
+
+lazyShorter :: [a] -> [a] -> [a]
+lazyShorter xs ys = if short xs ys then xs else ys
+    where
+        short [] ys = True
+        short xs [] = False
+        short (x:xs) (y:ys) = short xs ys
+
+-- 由于递归地遍历这两个列表，这些问题在写 Haskell 程序的时候就需要注意。当的确要处理
+-- 非常长的列表时，就不可以使用 Int 与 length。这里的 short 函数就用了惰性求值的特性，
+-- 只要有一个列表为空时，就直接返回结果，而不再去计算另外一个列表了。这样，即便另外
+-- 一个列表是无限的，也不会使这个计算卡住。
