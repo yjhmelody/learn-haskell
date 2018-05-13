@@ -239,3 +239,37 @@ selectionSort xs = mini : selectionSort xs'
     where   mini = minimum xs
             xs' = delete mini xs
     
+quicksort :: Ord a => [a] -> [a]
+quicksort [] = []
+quicksort (x:xs) = quicksort left ++ [x] ++ quicksort right
+    where   left = filter (<x) xs
+            right = filter (>=x) xs
+
+filterSplit :: (a -> Bool) -> [a] -> ([a], [a])
+filterSplit _ [] = ([], [])
+filterSplit f (x:xs)| f x = ((x:l), r)
+                    | otherwise = (l, (x:r))
+    where (l, r) = filterSplit f xs
+
+quicksort' :: Ord a => [a] -> [a]
+quicksort' [] = []
+quicksort' [x] = [x]
+quicksort' (x:xs) = quicksort' l ++ [x] ++ quicksort' r
+    where (l, r) = filterSplit (<x) xs
+
+
+merge :: Ord a => [a] -> [a] -> [a]
+merge xs [] = xs
+merge [] xs = xs
+merge (x:xs) (y:ys) | x > y = y : merge (x:xs) ys
+                    | otherwise = x : merge xs (y:ys)
+                
+mergeSort :: Ord a => [a] -> [a]
+mergeSort [] = []
+mergeSort [x] = [x]
+mergeSort xs = merge (mergeSort x1) (mergeSort x2)
+    where 
+        (x1, x2) = halve xs
+        halve xs = (take l xs, drop l xs)
+        l = (length xs) `div` 2 
+
