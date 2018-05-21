@@ -140,3 +140,48 @@ scanr' :: (a -> b -> b) -> b -> [a] -> [b]
 scanr' _ a [] = [a]
 scanr' f a (x:xs) = f x y : ys
     where ys@(y:_) = scanr' f a xs
+
+
+-- mapAccumL 与 mapAccumR 函数
+
+-- 这两个函数可以理解为，在计算的时候常常需要返回一些状态。比如，在将某个列表在求和
+-- 的过程中，记录当前和的奇偶性
+mapAccumL :: (acc -> x -> (acc, y)) -> acc -> [x] -> (acc, [y])
+mapAccumL _ s [] = (s, [])
+mapAccumL f s (x:xs) = (s'', y:ys)
+    where
+        (s', y) = f s x
+        (s'', ys) = mapAccumL f s' xs
+
+mapAccumR :: (acc -> x -> (acc, y)) -> acc -> [x] -> (acc, [y])
+mapAccumR _ s [] = (s, [])
+mapAccumR f s (x:xs) = (s'', y:ys)
+    where
+        (s', ys) = mapAccumR f s xs        
+        (s'', y) = f s' x
+
+
+-- 复合函数
+-- (.) :: (b -> c) -> (a -> b) -> (a -> c)
+-- (.) f g = \x -> f (g x)
+
+-- infix 9 >>
+-- (>>) :: (a -> b) -> (b -> c) -> (a -> c)
+-- (>>) = flip (.)
+
+-- 有些人为了把参数写在函数体的前面更符合直觉，所以定义了这样一个有趣的类似管道的运算符
+(|>) :: b -> (b -> c) -> c
+(|>) = flip ($)
+
+-- (|>) 这个运算符被预定义在了 F# 中，在 F# 中可以直接使用。
+
+any', all' :: (a -> Bool) -> [a] -> Bool
+any' p = or  . map p
+all' p = and . map p
+
+elem', notElem' :: Eq a => a -> [a] -> Bool
+elem' = any . (==)
+notElem' = all . (/=)
+
+concatMap' :: (a -> [b]) -> [a] -> [b]
+concatMap' f = foldr ((++) . f) []
