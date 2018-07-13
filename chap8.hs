@@ -1,3 +1,12 @@
+{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+import Data.Sequence
+
+
 -- 定义数据类型
 -- data 是定义新类型的关键字，后边跟想要定义的类型名称，类型名称首字母要大写。
 data Bool' = False' | True' deriving Show
@@ -305,3 +314,73 @@ natToList (Succ n) = Cons Unit (natToList n)
 
 -- (><) :: (a -> b) -> (c -> d) -> (a, c) -> (b, d)
 
+
+-- 多分⽀条件、模式匹配守卫、观察模式表达式与模式的别名
+
+-- Haskell 中又引入了另外 3 种表达方式，
+-- 分别是多分支的条件，这种表达式的语言扩展是 MultiWayIf。
+-- 此外还有模式守卫表达式，对应的语言扩展是 PatternGuards，这种表达方法可以同时做条件限定与模式匹配。
+-- 最后还有观察模式表达式，在 GHC 中对应ViewPatterns语言扩展。
+
+foo a1 a2 = if  | a1 > 10 -> if | a1 < 20 && a2 > 50 -> True
+                                | a1 >= 10 && a2 < 50 -> False
+                | a1 < 10 -> True
+                | otherwise -> False
+
+-- foo a1 a2 = if {    | guard1 -> if { | guard2 -> expr2 ;
+                    -- | guard3 -> expr3 }
+                    -- | guard4 -> expr4 ;
+                    -- | guard5 -> expr5 }
+
+-- data Shape = Triangle Int Int Int | Circle Int
+-- isValidShape :: Shape -> Bool
+-- isValidShape s | Circle r <- s, r > 0 = True
+-- isValidShape s | Triangle a b c <- s,a > 0 && b > 0 && c > 0, a + b > c && a + c > b && b + c > a = True
+-- isValidShape _ = False
+
+
+match' :: Seq Int -> Seq Int -> (Int, Seq Int)
+match' (viewl -> EmptyL) s2@(viewr -> EmptyR) = (0,s2)
+match' (viewl -> EmptyL) (viewr -> xs :> x) = (x,xs)
+match' (viewl -> a :< as) (viewr -> EmptyR) = (a,as)
+match' (viewl -> a :< as) (viewr -> xs :> x) = (a + x, xs >< as)
+
+-- 观察模式匹配中-> 左侧的是观察函数，它是一个需要一个参数得到结果，我会需要把模式写在箭头的右侧。
+
+
+-- 模式的别名
+
+-- 有时，类型的定义会比较复杂，对于这些类型在匹配的时候代码会十分不干净，而且更重要的是我们在定义函数时“模式”是无法复用的
+
+data Exp = Val Int | Exp String [Exp]
+    deriving  (Show, Eq)
+
+pattern Add t1 t2 = Exp "+" [t1, t2]
+pattern Sub t1 t2 = Exp "-" [t1, t2]
+
+-- let a = Add (Val 1) (Val 2)
+
+eval' (Val n) = n
+eval' (Add t1 t2) = eval' t1 + eval' t2
+eval' (Sub t1 t2) = eval' t1 - eval' t2
+-- 等价于
+eval'' (Val n) = n
+eval'' (Exp "+" [t1, t2]) = eval'' t1 + eval'' t2
+eval'' (Exp "-" [t1, t2]) = eval'' t1 - eval'' t2
+
+
+-- 使⽤ newtype 定义类型
+
+-- newtype 只能定义单一构造器，并且该构造器只能有且仅有一个参数。
+-- data 关键字是可以完全代替 newtype 的，但反之则可能不成立。
+
+-- 下面的定义是合法的，因为 (a,b) 将作为 NewType 构造器的唯一一个参数
+-- newtype T a b = NewType (a, b)
+-- newtype 定义的类型是一个新的类型。并且 newtype 关键字也可以递归地定义一个类型。
+-- 另外，使用 newtype 定义一个类型可以理解为是将已有的某些类型整合为一个类型，只是在这个类型外多了一个标记（tag）而已。
+
+-- 使用 data 定义类型会在编译系统类型检查与运行中产生额外的运行负担，而有的时候我们只是为了给某个已有的类型加一层包装来表示区分
+
+newtype Velocity = Velocity Int deriving (Num, Show ,Eq)
+newtype Weight = Weight Int deriving (Num, Show, Eq)
+newtype Second = Second Int deriving (Num, Show, Eq)
