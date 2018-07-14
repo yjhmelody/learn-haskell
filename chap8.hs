@@ -5,6 +5,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 import Data.Sequence
+import Data.List (insertBy, sortBy)
+import Data.Ord (comparing)
 
 
 -- 定义数据类型
@@ -384,3 +386,77 @@ eval'' (Exp "-" [t1, t2]) = eval'' t1 - eval'' t2
 newtype Velocity = Velocity Int deriving (Num, Show ,Eq)
 newtype Weight = Weight Int deriving (Num, Show, Eq)
 newtype Second = Second Int deriving (Num, Show, Eq)
+
+
+-- 树
+data Tree a = Leaf a | Node a (Tree a) (Tree a)
+data Tree' a = Node' a [Tree' a]
+-- 上面的定义称为 rose tree，可以有很多叉或者没有叉。它为什么不需要定义基本形式 Leaf呢？因为当后跟的列表为空的时候就可以理解为一个基本形式了。
+-- 这种方式也是 Haskell 库中树的定义
+-- Data.Tree 中源文件中是这样定义的：
+-- data Tree a = Node
+-- { rootLabel :: a
+-- , subForest :: Forest a
+-- }
+
+-- type Forest a = [Tree a]
+
+-- Haskell 中的树与其他语言里的树有很大差别的，纯函数中不能定义 C 语言中的指针变量。
+-- Haskell 定义树的各个结点间是不会形成环的，而 Java 或者 C 语言语言中定义的树是通
+-- 过对象引用或者指针变量定义。这样，一棵子树可能被树中多处引用。
+-- parent.left = & child ;
+-- parent.right = & child ;
+
+-- 卡塔兰数问题
+
+-- 给定 n 个结点，一共能组成多少种二叉树，所得到的数列就是卡塔兰数。
+
+-- 思路就是将一个节点取出作为父节点，然后假定余下的节点个数为 n，将 n 拆分成不
+-- 同整数的和，可以得到列表 [(0,n), (1,n-1),(2,n-2)...]，然后对于一个整数对 (l,r) 递
+-- 归地用这个函数将树生成出左树与右树后加在父节点的左右就可以了。
+
+data CTree = CLeaf | CNode CTree CTree deriving (Show)
+treeNum :: Int -> [CTree]
+treeNum 0 = [CLeaf]
+treeNum n = [CNode lt rt | l <- [0..(n-1)], lt <- treeNum l, rt <- treeNum (n-1-l)]
+
+
+-- 霍夫曼编码
+
+-- [("p1",0.4),("p2",0.3), ("p3",0.1),("p4",0.1),("p5",0 .06),("p6",0.04)]
+
+data HTree a = HLeaf a | Branch (HTree a) (HTree a) deriving Show
+
+htree :: (Ord a, Num a) => [(a, HTree b)] -> HTree b
+htree [(_, t)] = t
+htree ((w1, t1): (w2, t2):xs) = htree $ insertBy (comparing fst) (w1 + w2, Branch t1 t2) xs
+
+serialize :: HTree a -> [(a, String)]
+serialize (HLeaf x) = [(x, "")]
+serialize (Branch l r) = 
+    [(x, '0':code) | (x, code) <- serialize l] ++ [(x, '1':code) | (x, code) <- serialize r]
+    
+huffman :: (Ord a, Ord w, Num w) => [(a, w)] -> [(a, String)]
+huffman freq = Data.List.sortBy (comparing fst) $ -- 按名字排序
+        serialize $ htree $ Data.List.sortBy (comparing fst) $ [(w, HLeaf x) | (x, w) <- freq] -- 从右到左 sort build-tree traverse
+
+
+-- Zipper
+
+-- 当我们需要在一个容器中反复多次游历时需要在游历的过程中保持容器结构与其中值的完整性。
+-- 当我们需要在列表中来回游历时就需要使用拉锁（Zipper）类型。
+
+data Zipper a = Zipper [a] a [a] deriving Show
+
+fromList' :: [a] -> Zipper a
+fromList' (x:xs) = Zipper [] x xs
+fromList' _ = error "empty list"
+
+-- 当前所在的位置为 a，向后移动一次就将 Zipper 当前的元素暂时存入左面的列表中，再从右端列表中取出一个元素作为当前位置。再向前移动也是类似的。
+next :: Zipper a -> Zipper a
+next (Zipper xs a (y:ys)) = Zipper (a:xs) y ys
+next z = z
+
+prev :: Zipper a -> Zipper a
+prev (Zipper (x:xs) a ys) = Zipper xs a (x:ys)
+prev z = z
