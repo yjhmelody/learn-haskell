@@ -464,27 +464,5 @@ prev (Zipper (x:xs) a ys) = Zipper xs a (x:ys)
 prev z = z
 
 
--- 8.11 ⼀般化的代数数据类型
 
--- 8.11.1 简易谓词逻辑计算器
--- data Formula ts where
---     Body    :: Term Bool -> Formula ()
---     Forall  :: Show a => [a] -> (Term a -> Formula as) -> Formula (a, as)
---     Exist   :: Show a => [a] -> (Term a -> Formula as) -> Formula (a, as)
-
--- data Term t where
---     Con :: t -> Term t
---     :&: :: Term Bool -> Term Bool -> Term Bool
---     :|: :: Term Bool -> Term Bool -> Term Bool
---     :<: :: Term Int -> Term Int -> Term Bool
---     :=: :: Term Int -> Term Int -> Term Bool
---     :+: :: Term Int -> Term Int -> Term Int
---     :-: :: Term Int -> Term Int -> Term Int
---     Name :: String -> Term t
-
--- ex1 :: Formula ()
--- ex1 = Body(Con True)
-
--- ex2 :: Formula(Int, ())
--- ex2 = Forall [1 .. 10] $ \n -> Body $ n :<: (n :+: Con 1)
 
