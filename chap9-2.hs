@@ -275,4 +275,25 @@ instance Alternative [] where
 -- [Just 1,Just 2,Just 3,Nothing]
 
 
--- 上面的函子、可应用函子、可选择应用函子 3 个类型类是来自于抽象代数的
+-- 上面的函子、可应用函子、可选择应用函子 3 个类型类是来自于抽象代数
+
+-- 可读类型类 Read
+type ReadS a = String -> [(a, String)]
+
+class Read a where
+    readsPrec :: Read a => Int -> ReadS a
+
+newtype Identity a = Identity { runIdentity :: a }
+
+
+instance (Read a) => Read (Identity a)
+    where readsPrec d = readParen (d > 10) $ \r ->
+        [(Identity x, t) | ("Identity", s) <- lex r, (x, t) <- readsPrec 11 s]
+    
+
+-- Haskell 提供了 ByteString、Text 等，ByteString 是
+-- 通过 Word8 数组来存储的字符串，而 Text 则是把 ByteString 编码成一些标准格式，比如
+-- ASCII、UTF8 等编码标准。有时我们就需要把 String 转换成为 ByteString 与 Text，这
+-- 时就可以使用 IsString 类型类里的 fromString
+class IsString a where
+    fromString :: String -> a
