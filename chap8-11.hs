@@ -84,4 +84,3 @@ ex2 = Forall [1 .. 10] $ \n -> Body $ n :<: (n :+: Con 1)
 
 -- ex3 :: Formula (Bool, (Int, ()))
 -- ex3 = Forall [False, True] $ \p -> Forall [0 .. 2] $ \n -> Body $ p :|: (Con 0 :<: n)
-

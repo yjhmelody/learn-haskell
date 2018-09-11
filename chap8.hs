@@ -462,7 +462,3 @@ next z = z
 prev :: Zipper a -> Zipper a
 prev (Zipper (x:xs) a ys) = Zipper xs a (x:ys)
 prev z = z
-
-
-
-
