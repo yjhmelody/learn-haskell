@@ -18,12 +18,12 @@ class MyMonoid a where
 
 
 -- 常见的单位半群：(Bool, &&, True) 与 (Bool, ||, False)
-newtype ALL = ALL {getAll :: Bool}
+newtype All = All {getAll :: Bool}
     deriving (Eq, Ord, Read, Show, Bounded)
 
-instance MyMonoid ALL where
-    mempty = ALL True
-    ALL x `mappend` ALL y = ALL (x && y)
+instance MyMonoid All where
+    mempty = All True
+    All x `mappend` All y = All (x && y)
 
 newtype Any = Any { getAny :: Bool }
     deriving (Eq, Ord, Read, Show, Bounded)
@@ -96,3 +96,33 @@ instance MyMonoid a => MyMonoid (Dual a) where
 
 
 -- 半群类型类 Semigroup
+
+-- 如果单位半群上没有单位元，这个代数结构就是半群，也就是只闭合于一个有结合性质
+-- 的二元运算之下的集合 S 构成的代数结构，即有序对 (S, ⊕) 被称为半群。对于所有的单位半群，都满足这个条件。
+
+-- 除了半群 Semigroup 的定义以外，Hackage 上的 group 库还提供了群（Group）类型类，
+-- 只是在单位半群的基础上多了一个逆函数（inverse function），此外还提供了可交换群（abelian group）类型类，
+-- 可交换群的类型类实例中定义的二元运算符必须满足交换律
+
+
+-- 默认值类型类 Default
+
+class Default a where
+    def :: a
+
+instance Default Int where 
+    def = 0
+
+instance (Default r) => Default (e -> r) where
+    def = const def
+
+instance Default (Maybe a) where
+    def = Nothing
+
+instance Default Any where
+    def = mempty
+
+instance Default All where
+    def = mempty
+
+-- 与半群类似，对于一个单位半群它总是可以有一个默认的值 mempty
