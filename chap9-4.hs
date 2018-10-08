@@ -1,3 +1,5 @@
+
+
 -- Haskell 中其他常⻅的类型类
 
 -- 单位半群类型类 Monoid
@@ -8,9 +10,11 @@
 -- （monoid），也称作幺半群
 
 {-# LANGUAGE NoImplicitPrelude #-}
-
+{-# LANGUAGE DeriveFoldable #-}
 module Class where
 import Prelude hiding (mempty, mappend)
+import Data.Foldable
+import Data.Monoid
 
 class MyMonoid a where
     mempty :: a
@@ -126,3 +130,33 @@ instance Default All where
     def = mempty
 
 -- 与半群类似，对于一个单位半群它总是可以有一个默认的值 mempty
+
+
+-- 可折叠类型类 Foldable
+-- class MyFoldable (t :: * -> *) where
+--     fold :: MyMonoid m => t m -> m
+--     fold = foldMap id
+
+--     foldr :: (a -> b -> b) -> b -> t a -> b
+--     foldr f z t = appEndo (foldMap (Endo . f) t ) z
+
+--     foldl :: (b -> a -> b) -> b -> t a -> b
+--     foldl f z t = appEndo (getDual (foldMap (Dual . Endo . flip f) t)) z
+--     ...
+
+
+-- data Tree a = Leaf a | Node (Tree a) a (Tree a)
+--     deriving (Show)
+
+-- instance Foldable Tree where
+--     foldMap f (Leaf a) = f x
+--     foldMap f (Node l k r) = foldMap f l `mappend` f k `mappend` foldMap f r 
+
+-- Fold 的⼆元性定理
+-- 第一二元性定理: 若 (M, ⊕, u) 为一个单位半群，⊕ 为二元运算符，u 为单位元，
+-- 那么有 foldr ⊕ u xs = foldl ⊕ u xs，其中 xs 为有限元素的列表。
+-- 第二二元性定理：若存在两个二元运算符 ⊕、⊗ 还有一个值 e，满足 x⊕(y⊗z) = (x ⊕ y) ⊗ z 且 x ⊕ e = e ⊗ x，
+-- 那么 foldr ⊕ e xs = foldl ⊗ e xs，其中 xs 为有限元素的列表。它是第一定理更为一般的形式。
+-- 第三二元性定理：对于所有的有限列表 xs，都有：foldr f u xs = foldl (flip f) e (reverse xs)
+-- u 与 e 分别是 f 与 flip f 的单位元。
+
